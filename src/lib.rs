@@ -57,6 +57,7 @@ pub struct ProcessingArgs<'a> {
     /// This can for instance be used to update the UI.
     /// main.rs uses this channel to update the indicatif status bard.
     pub message_tx: Option<mpsc::Sender<message::Message>>,
+    pub timeout_duration: Option<std::time::Duration>, // NEW FIELD
 }
 
 fn send_message(
@@ -71,7 +72,7 @@ fn send_message(
 }
 
 fn process(args: ProcessingArgs) -> Result<()> {
-    log::debug!("Processing derivation: {:?}", args.attribute_path);
+    log::debug!("process: Starting for derivation: {:?}", args.attribute_path);
 
     // Inform the calling thread that we are starting to process the derivation
     send_message(
@@ -83,10 +84,13 @@ fn process(args: ProcessingArgs) -> Result<()> {
         },
     )?;
 
+    log::debug!("process: Describing derivation: {}", args.attribute_path);
     let description = nix::describe_derivation(&nix::DescribeDerivationArgs::from(args.clone()))?;
+    log::debug!("process: Finished describing derivation: {}", args.attribute_path);
 
     // Abort if we have reached to bootstrap stage
     if description.name == "bootstrap-tools" || description.name.starts_with("bootstrap-stage") {
+        log::debug!("process: Skipping bootstrap derivation: {}", description.name);
         return Ok(());
     }
 
@@ -102,8 +106,10 @@ fn process(args: ProcessingArgs) -> Result<()> {
 
     // Send the DerivationDescription to the main thread
     args.tx.send(description.clone())?;
+    log::debug!("process: Sent description for {} to main thread.", description.attribute_path);
 
     // use par_iter to call process on all children of this derivation
+    log::debug!("process: Processing {} build inputs for {}.", description.build_inputs.len(), description.attribute_path);
     description
         .build_inputs
         .into_par_iter()
@@ -114,7 +120,7 @@ fn process(args: ProcessingArgs) -> Result<()> {
                 match &build_input.output_path {
                     None => {
                         log::warn!(
-                            "Found a derivation without an output_path: {:?}",
+                            "process: Found a derivation without an output_path: {:?}",
                             build_input
                         );
                         false
@@ -125,7 +131,7 @@ fn process(args: ProcessingArgs) -> Result<()> {
 
             if done {
                 log::debug!(
-                    "Skipping already processed derivation: {}",
+                    "process: Skipping already processed derivation: {}",
                     build_input.attribute_path.to_string()
                 );
 
@@ -136,22 +142,25 @@ fn process(args: ProcessingArgs) -> Result<()> {
                     message::Message {
                         status: message::Status::Skipped,
                         id: rayon::current_thread_index().unwrap(),
-                        path: build_input.attribute_path.clone(),
+                        path: build_input.attribute_path,
                     },
                 )?;
 
                 return Ok(());
             }
 
+            log::debug!("process: Recursively processing build input: {}", build_input.attribute_path);
             // Call process with the build_input
             process(ProcessingArgs {
                 attribute_path: build_input.attribute_path,
                 tx: args.tx.clone(),
                 message_tx: args.message_tx.clone(),
+                timeout_duration: args.timeout_duration, // Propagate timeout
                 ..args
             })
         })
         .collect::<Result<Vec<()>>>()?;
+    log::debug!("process: Finished processing build inputs for {}.", args.attribute_path);
 
     Ok(())
 }
@@ -163,6 +172,7 @@ pub struct NixtractConfig {
     pub runtime_only: bool,
     pub binary_caches: Option<Vec<String>>,
     pub message_tx: Option<mpsc::Sender<message::Message>>,
+    pub timeout_duration: Option<std::time::Duration>, // NEW FIELD
 }
 
 pub fn nixtract(
@@ -171,24 +181,37 @@ pub fn nixtract(
     attribute_path: Option<impl Into<String>>,
     config: NixtractConfig,
 ) -> Result<impl Iterator<Item = DerivationDescription>> {
+    log::info!("nixtract: Starting process.");
+
     // Convert the arguments to the expected types
     let flake_ref = flake_ref.into();
     let system = system.map(Into::into);
     let attribute_path = attribute_path.map(Into::into);
 
+    log::debug!("nixtract: Resolved flake_ref: {}", flake_ref);
+    log::debug!("nixtract: Resolved system: {:?}", system);
+    log::debug!("nixtract: Resolved attribute_path: {:?}", attribute_path);
+
     let binary_caches = match config.binary_caches {
-        None => nix::substituters::get_substituters(flake_ref.clone())?,
-        Some(caches) => caches,
+        None => {
+            log::debug!("nixtract: Getting substituters from Nix configuration.");
+            nix::substituters::get_substituters(flake_ref.clone())?
+        }
+        Some(caches) => {
+            log::debug!("nixtract: Using provided binary caches: {:?}", caches);
+            caches
+        }
     };
 
     // Writes the `lib.nix` file to the tempdir and stores its path
     let lib = nix::lib::Lib::new()?;
+    log::debug!("nixtract: Nix library path: {:?}", lib.path);
 
     // Create a channel to communicate DerivationDescription to the main thread
     let (tx, rx) = mpsc::channel();
 
     log::info!(
-        "Starting nixtract with flake_ref: {}, system: {}, attribute_path: {:?}",
+        "nixtract: Starting attribute path discovery for flake_ref: {}, system: {}, attribute_path: {:?}",
         flake_ref,
         system
             .clone()
@@ -202,25 +225,30 @@ pub fn nixtract(
     // call find_attribute_paths to get the initial set of derivations
     let attribute_paths =
         nix::find_attribute_paths(&flake_ref, &system, &attribute_path, &config.offline, &lib)?;
+    log::debug!("nixtract: Found {} initial attribute paths.", attribute_paths.len());
 
     // Combine all AttributePaths into a single Vec
     let mut derivations: Vec<FoundDrv> = Vec::new();
-    for attribute_path in attribute_paths {
-        derivations.extend(attribute_path.found_drvs);
+    for found_attribute_path in attribute_paths {
+        log::debug!("nixtract: Extending derivations with {} found drvs from attribute path: {}", found_attribute_path.found_drvs.len(), found_attribute_path.attribute_path);
+        derivations.extend(found_attribute_path.found_drvs);
     }
+    log::debug!("nixtract: Total initial derivations to process: {}.", derivations.len());
 
     for found_drv in derivations.clone() {
         match found_drv.output_path {
-            None => log::warn!("Found a derivation without an output_path: {:?}", found_drv),
+            None => log::warn!("nixtract: Found a derivation without an output_path: {:?}", found_drv),
             Some(output_path) => {
                 let mut collected_paths = collected_paths.lock().unwrap();
                 collected_paths.insert(output_path);
+                log::debug!("nixtract: Added {} to collected paths.", found_drv.attribute_path);
             }
         }
     }
 
     // Spawn a new rayon thread to call process on every foundDrv
     rayon::spawn(move || {
+        log::debug!("nixtract: Spawning rayon threads to process derivations.");
         derivations.into_par_iter().for_each(|found_drv| {
             let processing_args = ProcessingArgs {
                 collected_paths: &collected_paths,
@@ -234,14 +262,17 @@ pub fn nixtract(
                 lib: &lib,
                 tx: tx.clone(),
                 message_tx: config.message_tx.clone(),
+                timeout_duration: config.timeout_duration, // Propagate timeout
             };
             match process(processing_args) {
                 Ok(_) => {}
-                Err(e) => log::warn!("Error processing derivation: {}", e),
+                Err(e) => log::warn!("nixtract: Error processing derivation: {}", e),
             }
         });
+        log::debug!("nixtract: All initial derivations processed by rayon.");
     });
 
+    log::info!("nixtract: Returning iterator for results.");
     Ok(rx.into_iter())
 }
 
@@ -270,6 +301,7 @@ mod tests {
                     offline: false,
                     include_nar_info: false,
                     message_tx: None,
+                    timeout_duration: None, // Add this to test config
                 };
 
                 log::info!("Running test for {:?}", path);

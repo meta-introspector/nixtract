@@ -40,6 +40,7 @@ serde_json = "1.0.113"
 shell-escape = "0.1.5"
 tempfile = "3.9.0"
 thiserror = "1.0.56"
+wait-timeout = "0.2" # Add this line
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"

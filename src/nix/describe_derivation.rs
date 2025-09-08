@@ -1,7 +1,6 @@
-use std::{collections::HashMap, process::Command};
-
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, process::Command, time::Duration};
+use wait_timeout::ChildExt;
+use log::{debug, info, warn, error};
 
 use super::lib::Lib;
 use crate::error::{Error, Result};
@@ -76,6 +75,7 @@ pub struct DescribeDerivationArgs<'a> {
     pub include_nar_info: bool,
     pub binary_caches: &'a [String],
     pub lib: &'a Lib,
+    pub timeout_duration: Option<Duration>, // NEW FIELD
 }
 
 impl<'a> From<crate::ProcessingArgs<'a>> for DescribeDerivationArgs<'a> {
@@ -89,6 +89,7 @@ impl<'a> From<crate::ProcessingArgs<'a>> for DescribeDerivationArgs<'a> {
             include_nar_info: args.include_nar_info,
             binary_caches: args.binary_caches,
             lib: args.lib,
+            timeout_duration: args.timeout_duration, // Propagate timeout
         }
     }
 }
@@ -129,28 +130,58 @@ pub fn describe_derivation(args: &DescribeDerivationArgs) -> Result<DerivationDe
         .args(["--extra-experimental-features", "flakes nix-command"])
         .envs(env_vars);
 
-    // Add --offline if offline is set
-    if args.offline {
-        command.arg("--offline");
-    }
+    debug!("describe_derivation: Running command: {:?}", command);
 
-    let output = command.output()?;
+    let mut child = command.spawn()?; // Spawn the command
+
+    let output = if let Some(timeout) = args.timeout_duration {
+        debug!("describe_derivation: Waiting for command with timeout: {:?}", timeout);
+        match child.wait_timeout(timeout)? {
+            Some(status) => {
+                // Command finished within timeout
+                debug!("describe_derivation: Command finished with status: {:?}", status);
+                if !status.success() {
+                    let stderr = String::from_utf8_lossy(&child.wait_with_output()?.stderr);
+                    error!("describe_derivation: Command failed with status {:?} and stderr: {}", status.code(), stderr);
+                    return Err(Error::NixCommand(status.code(), stderr.to_string()));
+                }
+                child.wait_with_output()? // Get the output
+            },
+            None => {
+                // Command timed out
+                warn!("describe_derivation: Command timed out after {:?}", timeout);
+                child.kill()?; // Kill the process
+                child.wait()?; // Wait for it to be killed
+                return Err(Error::NixCommand(None, format!("Command timed out after {:?}", timeout)));
+            }
+        }
+    } else {
+        debug!("describe_derivation: Waiting for command without timeout.");
+        child.wait_with_output()? // Wait without timeout
+    };
 
     // Get stdout, stderr as a String
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
 
-    log::debug!("stdout: {}", stdout);
+    debug!("describe_derivation: stdout: {}", stdout);
+    if !stderr.is_empty() {
+        warn!("describe_derivation: stderr: {}", stderr);
+    }
 
-    // Check if the nix command was successful
+    // Check if the nix command was successful (redundant if handled in timeout block, but good for non-timeout path)
     if !output.status.success() {
+        error!("describe_derivation: Nix command failed with status {:?} and stderr: {}", output.status.code(), stderr);
         return Err(Error::NixCommand(output.status.code(), stderr.to_string()));
     }
 
     // Parse the stdout as JSON
     let mut description: DerivationDescription = match serde_json::from_str(stdout.trim()) {
         Ok(description) => description,
-        Err(e) => return Err(Error::SerdeJSON(args.attribute_path.to_owned(), e)),
+        Err(e) => {
+            error!("describe_derivation: Failed to parse JSON for {}: {}", args.attribute_path, e);
+            return Err(Error::SerdeJSON(args.attribute_path.to_owned(), e));
+        }
     };
 
     if args.include_nar_info && description.output_path.is_some() {
