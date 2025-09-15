@@ -1,0 +1,9 @@
+/data/data/com.termux.nix/files/home/pick-up-nix/vendor/nix/nixtract/target/debug/deps/libonce_cell-976ea52f13323afe.rmeta: /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/lib.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/imp_std.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/race.rs
+
+/data/data/com.termux.nix/files/home/pick-up-nix/vendor/nix/nixtract/target/debug/deps/libonce_cell-976ea52f13323afe.rlib: /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/lib.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/imp_std.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/race.rs
+
+/data/data/com.termux.nix/files/home/pick-up-nix/vendor/nix/nixtract/target/debug/deps/once_cell-976ea52f13323afe.d: /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/lib.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/imp_std.rs /data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/race.rs
+
+/data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/lib.rs:
+/data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/imp_std.rs:
+/data/data/com.termux.nix/files/home/.cargo/registry/src/index.crates.io-6f17d22bba15001f/once_cell-1.19.0/src/race.rs:
