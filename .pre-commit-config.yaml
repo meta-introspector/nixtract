@@ -1,5 +1,8 @@
 repos:
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.5 # Use a specific version
+  - repo: local
     hooks:
-      - id: shellcheck
+      - id: rusty-hook
+        name: Rusty Hook ShellCheck
+        entry: rusty-hook
+        language: system
+        args: ["run", "shellcheck"] # Run the 'shellcheck' hook defined in .rusty-hook.toml
