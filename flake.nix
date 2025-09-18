@@ -19,6 +19,7 @@
             asciinema
             pre-commit # Add pre-commit to the devShell
             shellcheck # Add shellcheck to the devShell
+            direnv # Add direnv to the devShell
           ];
 
           shellHook = ''
