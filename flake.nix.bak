@@ -1,5 +1,5 @@
 {
-  description = "A flake for this submodule, providing a basic development shell.";
+  description = "A flake for the submodule, providing a development shell for Gemini CLI.";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
@@ -16,12 +16,14 @@
           packages = with pkgs; [
             bash
             git
-            shellcheck # Add shellcheck for shell script linting
-            # Add any other common tools needed for your submodules here
+            asciinema
+            pre-commit # Add pre-commit to the devShell
+            shellcheck # Add shellcheck to the devShell
           ];
 
           shellHook = ''
-            echo "Welcome to the development shell of this submodule!"
+            echo "Welcome to the submodule Gemini CLI development shell!"
+            pre-commit install # Install pre-commit hooks when entering the shell
           '';
         };
       }

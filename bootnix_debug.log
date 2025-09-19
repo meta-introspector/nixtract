@@ -1,0 +1,17 @@
+warning: Git tree '/data/data/com.termux.nix/files/home/pick-up-nix2/vendor/nix/nixtract' is dirty
+error:
+       … while updating the lock file of flake 'git+file:///data/data/com.termux.nix/files/home/pick-up-nix2/vendor/nix/nixtract'
+
+       … while updating the flake input 'rusty-hook'
+
+       … while fetching the input 'github:meta-introspector/rusty-hook/v0.11.2'
+
+       error: unable to download 'https://api.github.com/repos/meta-introspector/rusty-hook/commits/v0.11.2': HTTP error 422
+
+       response body:
+
+       {
+         "message": "No commit found for SHA: v0.11.2",
+         "documentation_url": "https://docs.github.com/rest/commits/commits#get-a-commit",
+         "status": "422"
+       }

@@ -1,36 +1,42 @@
 #!/usr/bin/env bash
 
-# This script is used to boot the development environment for nixtract.
-# It is designed to be sourced by other scripts or run directly.
+# This boot.sh is tailored for the submodule to launch the Gemini CLI.
 
-# Get the directory of the current script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+# Configuration
+SUBMODULE_NAME=$(basename "$(pwd)")
+SESSION_NAME="crq-${CRQ_NUMBER}-${SUBMODULE_NAME}"
+LOG_DIR=".gemini_logs"
+RECORDING_DIR="${LOG_DIR}/recordings"
+mkdir -p "$RECORDING_DIR"
 
-# --- Dependency Checks ---
+# Ensure log directory exists
+mkdir -p "$LOG_DIR"
 
-# Check for direnv
-if ! command -v direnv &> /dev/null; then
-    echo "Error: direnv is not installed or not in PATH." >&2
-    echo "Please install direnv to proceed: https://direnv.net/docs/installation.html" >&2
-    exit 1
-fi
+# Asciinema recording
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+ASCIINEMA_REC_FILE="${RECORDING_DIR}/session_${TIMESTAMP}.cast"
 
-# Check for nix
-if ! command -v nix &> /dev/null; then
-    echo "Error: Nix is not installed or not in PATH. Nix development environment cannot be entered." >&2
-    exit 1
-fi
+echo "Starting asciinema recording to: ${ASCIINEMA_REC_FILE}"
 
-# --- Environment Setup ---
+# The command to be executed inside tmux, which launches the Gemini CLI
+TMUX_INNER_COMMAND="nix develop --command bash -c \"/data/data/com.termux.nix/files/home/pick-up-nix2/gemini_cli_recent.sh\""
 
-# Allow direnv to load the environment variables from .envrc in the script's directory
-# This ensures direnv is always applied to the correct project root.
-direnv allow "${SCRIPT_DIR}"
+# Start asciinema recording, and inside it, start/attach to a tmux session.
+# The tmux session will then execute the gemini command.
+# The 'bash -c' is used to ensure the inner command is executed correctly within tmux.
+ascinema rec "${ASCIINEMA_REC_FILE}" --command "tmux new-session -A -s \"${SESSION_NAME}\" \; send-keys -t \"${SESSION_NAME}\" \"${TMUX_INNER_COMMAND}\" C-m"
 
-# Use nix develop to enter the development environment
-echo "Entering Nix development environment for nixtract..."
-nix develop "${SCRIPT_DIR}" --command bash -c "echo 'Welcome to the nixtract development environment! Exited Nix development environment.'"
+echo "Recording finished. To play: asciinema play ${ASCIINEMA_REC_FILE}"
 
-# Uncomment the following line if you want to use nix-shell instead
-# nix-shell "${SCRIPT_DIR}" --command bash -c "echo 'Welcome to the nixtract development environment! Exited Nix shell environment.'"
+# Initiate Crash Recovery Checks (adjusted for submodule context)
+echo "--- Initiating Crash Recovery Checks ---" | tee -a "$LOG_DIR/crash_recovery_log.txt"
+echo "Git Status:" | tee -a "$LOG_DIR/crash_recovery_log.txt"
+git status --ignore-submodules | tee -a "$LOG_DIR/crash_recovery_log.txt"
+echo "" | tee -a "$LOG_DIR/crash_recovery_log.txt"
+
+echo "Git Diff HEAD:" | tee -a "$LOG_DIR/crash_recovery_log.txt"
+git diff HEAD | tee -a "$LOG_DIR/crash_recovery_log.txt"
+echo "" | tee -a "$LOG_DIR/crash_recovery_log.txt"
+
+echo "--- Crash Recovery Checks Complete ---" | tee -a "$LOG_DIR/crash_recovery_log.txt"
 

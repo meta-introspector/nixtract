@@ -1,0 +1,186 @@
+--- Initiating Crash Recovery Checks ---
+Git Status:
+On branch main
+Your branch is ahead of 'upstream/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.gemini_logs/
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+Git Diff HEAD:
+
+--- Crash Recovery Checks Complete ---
+--- Initiating Crash Recovery Checks ---
+Git Status:
+On branch main
+Your branch is ahead of 'upstream/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   boot.sh
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.gemini_logs/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Git Diff HEAD:
+diff --git a/boot.sh b/boot.sh
+index 1e77975..94b43ff 100755
+--- a/boot.sh
++++ b/boot.sh
+@@ -24,7 +24,7 @@ TMUX_INNER_COMMAND="nix develop --command bash -c \"/data/data/com.termux.nix/fi
+ # Start asciinema recording, and inside it, start/attach to a tmux session.
+ # The tmux session will then execute the gemini command.
+ # The 'bash -c' is used to ensure the inner command is executed correctly within tmux.
+-ascinema rec "${ASCIINEMA_REC_FILE}" --command "tmux new-session -A -s \"${SESSION_NAME}\" \; send-keys -t \"${SESSION_NAME}\" \"${TMUX_INNER_COMMAND}\" C-m"
++asciinema rec "${ASCIINEMA_REC_FILE}" --command "tmux new-session -A -s \"${SESSION_NAME}\" \; send-keys -t \"${SESSION_NAME}\" \"${TMUX_INNER_COMMAND}\" C-m"
+ 
+ echo "Recording finished. To play: asciinema play ${ASCIINEMA_REC_FILE}"
+ 
+
+--- Crash Recovery Checks Complete ---
+--- Initiating Crash Recovery Checks ---
+Git Status:
+On branch main
+Your branch is ahead of 'upstream/main' by 2 commits.
+  (use "git push" to publish your local commits)
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   boot.sh
+	modified:   flake.lock
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.gemini_logs/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+Git Diff HEAD:
+diff --git a/boot.sh b/boot.sh
+index 1e77975..94b43ff 100755
+--- a/boot.sh
++++ b/boot.sh
+@@ -24,7 +24,7 @@ TMUX_INNER_COMMAND="nix develop --command bash -c \"/data/data/com.termux.nix/fi
+ # Start asciinema recording, and inside it, start/attach to a tmux session.
+ # The tmux session will then execute the gemini command.
+ # The 'bash -c' is used to ensure the inner command is executed correctly within tmux.
+-ascinema rec "${ASCIINEMA_REC_FILE}" --command "tmux new-session -A -s \"${SESSION_NAME}\" \; send-keys -t \"${SESSION_NAME}\" \"${TMUX_INNER_COMMAND}\" C-m"
++asciinema rec "${ASCIINEMA_REC_FILE}" --command "tmux new-session -A -s \"${SESSION_NAME}\" \; send-keys -t \"${SESSION_NAME}\" \"${TMUX_INNER_COMMAND}\" C-m"
+ 
+ echo "Recording finished. To play: asciinema play ${ASCIINEMA_REC_FILE}"
+ 
+diff --git a/flake.lock b/flake.lock
+index 93f6364..2468070 100644
+--- a/flake.lock
++++ b/flake.lock
+@@ -1,59 +1,43 @@
+ {
+   "nodes": {
+-    "naersk": {
++    "flake-utils": {
+       "inputs": {
+-        "nixpkgs": "nixpkgs"
++        "systems": "systems"
+       },
+       "locked": {
+-        "lastModified": 1698420672,
+-        "narHash": "sha256-/TdeHMPRjjdJub7p7+w55vyABrsJlt5QkznPYy55vKA=",
+-        "owner": "nix-community",
+-        "repo": "naersk",
+-        "rev": "aeb58d5e8faead8980a807c840232697982d47b9",
++        "lastModified": 1731533236,
++        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
++        "owner": "numtide",
++        "repo": "flake-utils",
++        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+         "type": "github"
+       },
+       "original": {
+-        "owner": "nix-community",
+-        "ref": "master",
+-        "repo": "naersk",
++        "owner": "numtide",
++        "repo": "flake-utils",
+         "type": "github"
+       }
+     },
+     "nixpkgs": {
+       "locked": {
+-        "lastModified": 1708247094,
+-        "narHash": "sha256-H2VS7VwesetGDtIaaz4AMsRkPoSLEVzL/Ika8gnbUnE=",
++        "lastModified": 1735563628,
++        "narHash": "sha256-OnSAY7XDSx7CtDoqNh8jwVwh4xNL/2HaJxGjryLWzX8=",
+         "owner": "NixOS",
+         "repo": "nixpkgs",
+-        "rev": "045b51a3ae66f673ed44b5bbd1f4a341d96703bf",
++        "rev": "b134951a4c9f3c995fd7be05f3243f8ecd65d798",
+         "type": "github"
+       },
+       "original": {
+-        "id": "nixpkgs",
+-        "type": "indirect"
+-      }
+-    },
+-    "nixpkgs_2": {
+-      "locked": {
+-        "lastModified": 1708247094,
+-        "narHash": "sha256-H2VS7VwesetGDtIaaz4AMsRkPoSLEVzL/Ika8gnbUnE=",
+         "owner": "NixOS",
+-        "repo": "nixpkgs",
+-        "rev": "045b51a3ae66f673ed44b5bbd1f4a341d96703bf",
+-        "type": "github"
+-      },
+-      "original": {
+-        "owner": "NixOS",
+-        "ref": "nixpkgs-unstable",
++        "ref": "nixos-24.05",
+         "repo": "nixpkgs",
+         "type": "github"
+       }
+     },
+     "root": {
+       "inputs": {
+-        "naersk": "naersk",
+-        "nixpkgs": "nixpkgs_2",
+-        "utils": "utils"
++        "flake-utils": "flake-utils",
++        "nixpkgs": "nixpkgs"
+       }
+     },
+     "systems": {
+@@ -70,24 +54,6 @@
+         "repo": "default",
+         "type": "github"
+       }
+-    },
+-    "utils": {
+-      "inputs": {
+-        "systems": "systems"
+-      },
+-      "locked": {
+-        "lastModified": 1705309234,
+-        "narHash": "sha256-uNRRNRKmJyCRC/8y1RqBkqWBLM034y4qN7EprSdmgyA=",
+-        "owner": "numtide",
+-        "repo": "flake-utils",
+-        "rev": "1ef2e671c3b0c19053962c07dbda38332dcebf26",
+-        "type": "github"
+-      },
+-      "original": {
+-        "owner": "numtide",
+-        "repo": "flake-utils",
+-        "type": "github"
+-      }
+     }
+   },
+   "root": "root",
+
+--- Crash Recovery Checks Complete ---
